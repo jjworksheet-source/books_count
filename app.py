@@ -7,8 +7,8 @@ st.title("Excel 出席報表處理 App - 分步執行")
 uploaded_file = st.file_uploader("上傳您的 XLS 報表", type=["xls", "xlsx"])
 
 if uploaded_file is not None:
-    # 讀取 Excel，跳過前 6 行，讓第 7 行成為標頭
-    df = pd.read_excel(uploaded_file, skiprows=6, engine='xlrd')
+    # 讀取 Excel，跳過前 6 行，用第 7 行作為標頭
+    df = pd.read_excel(uploaded_file, skiprows=6, header=0, engine='xlrd')
 
     # 清理欄位名稱（去除空格）
     df.columns = [str(col).strip() for col in df.columns]
