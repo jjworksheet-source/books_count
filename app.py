@@ -41,6 +41,7 @@ if step == "1. 做卷有效資料":
         try:
             # Read with header at row 6 (index 5)
             df = pd.read_excel(uploaded_file, header=5, dtype=str)
+            df = df.iloc[:, :15]  # Only keep columns A to O
         except Exception as e:
             st.error(f"讀取檔案時發生錯誤: {e}")
             st.stop()
