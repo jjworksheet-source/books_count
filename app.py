@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 st.title("Excel 出席報表處理 App - 分步執行")
 
@@ -12,6 +13,11 @@ def find_col(cols, keywords):
             if kw in str(col):
                 return col
     return None
+
+def to_excel_bytes(df):
+    output = io.BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    return output.getvalue()
 
 if uploaded_file is not None:
     # 讀取 Excel，跳過前 6 行，用第 7 行作為標頭
@@ -34,7 +40,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step1.columns.tolist())
         st.download_button(
             label="下載步驟 1 Excel",
-            data=st.session_state.df_step1.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step1),
             file_name="step1.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -65,7 +71,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step2.columns.tolist())
         st.download_button(
             label="下載步驟 2 Excel",
-            data=st.session_state.df_step2.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step2),
             file_name="step2.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -88,7 +94,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step3.columns.tolist())
         st.download_button(
             label="下載步驟 3 Excel",
-            data=st.session_state.df_step3.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step3),
             file_name="step3.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -110,7 +116,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step4.columns.tolist())
         st.download_button(
             label="下載步驟 4 Excel",
-            data=st.session_state.df_step4.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step4),
             file_name="step4.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -135,7 +141,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step5.columns.tolist())
         st.download_button(
             label="下載步驟 5 Excel",
-            data=st.session_state.df_step5.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step5),
             file_name="step5.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -156,7 +162,7 @@ if uploaded_file is not None:
         st.write("欄位名稱檢查:", st.session_state.df_step6.columns.tolist())
         st.download_button(
             label="下載步驟 6 Excel (大數表)",
-            data=st.session_state.df_step6.to_excel(index=False, engine='openpyxl'),
+            data=to_excel_bytes(st.session_state.df_step6),
             file_name="step6_summary.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
