@@ -14,7 +14,7 @@ def to_excel(df):
 uploaded_file = st.file_uploader("上傳客戶課堂報表 (xls/xlsx)", type=["xls", "xlsx"])
 
 if uploaded_file:
-    # 1. 讀取檔案，假設第6列為標題
+    # 1. 讀取檔案，header=5（第6列為標題）
     try:
         df = pd.read_excel(uploaded_file, header=5, dtype=str)
     except Exception as e:
