@@ -1,4 +1,6 @@
 streamlit
 pandas
+xlrd>=2.0.1
+gspread
+oauth2client
 openpyxl
-xlrd>=2.0.1  # 建議指定版本，避免相容問題
