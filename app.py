@@ -3,29 +3,18 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Jolly Jupiter IT Department", layout="wide")
-
 st.title("中文做卷及書管理")
 
 # Sidebar
 with st.sidebar:
     st.markdown("<h2 style='font-size:2em; color:#2c3e50;'>書數</h2>", unsafe_allow_html=True)
-    book_func = st.radio(
-        "書數功能",
-        ["書數有效範圍"]
-    )
-    st.markdown("---")
-    st.markdown("**其他功能**")
-    main_func = st.radio(
-        "請選擇功能",
-        [
-            "做卷有效資料",
-            "出卷老師資料",
-            "分校做卷情況"
-        ]
+    menu = st.radio(
+        "功能選單",
+        ["書數有效範圍", "做卷有效資料", "出卷老師資料", "分校做卷情況"]
     )
 
-# 書數有效範圍功能（獨立上傳，不依賴 step1）
-if book_func == "書數有效範圍":
+# 只顯示一個功能
+if menu == "書數有效範圍":
     st.header("書數有效範圍")
     uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
     if uploaded_book_file:
@@ -70,5 +59,14 @@ if book_func == "書數有效範圍":
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-# 其餘功能（做卷有效資料、出卷老師資料、分校做卷情況）照原本 session_state 流程
-# ...（其餘功能程式碼不變，直接接在這段後面即可）
+elif menu == "做卷有效資料":
+    # 這裡放你原本的「做卷有效資料」功能
+    pass
+
+elif menu == "出卷老師資料":
+    # 這裡放你原本的「出卷老師資料」功能
+    pass
+
+elif menu == "分校做卷情況":
+    # 這裡放你原本的「分校做卷情況」功能
+    pass
