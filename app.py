@@ -10,8 +10,8 @@ if uploaded_file is not None:
     # 讀取 Excel，跳過前 6 行元數據，讓第 7 行成為欄位頭
     df = pd.read_excel(uploaded_file, skiprows=6, engine='xlrd')  # 使用 xlrd 讀 .xls，如果是 .xlsx 可改 openpyxl
 
-    # 清理欄位名稱（去除可能的空格）
-    df.columns = [col.strip() for col in df.columns]
+    # 清理欄位名稱（先轉 str 再去除空格，避免非 str 錯誤）
+    df.columns = [str(col).strip() for col in df.columns]
 
     # 顯示原始數據預覽和欄位檢查
     st.subheader("原始數據預覽")
