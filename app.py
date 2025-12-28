@@ -4,7 +4,7 @@ from io import BytesIO
 
 st.set_page_config(page_title="Jolly Jupiter IT Department", layout="wide")
 
-st.title("中文組做卷管理系統")
+st.title("中文做卷及書管理")
 
 # Sidebar with step-by-step templates
 st.sidebar.title("操作步驟")
@@ -12,9 +12,9 @@ step = st.sidebar.radio(
     "請選擇步驟",
     [
         "1. 做卷有效資料",
-        "2. 客戶課堂報表處理",
+        "2. 出卷老師資料",
         "3. 分校做卷情況",
-        "4. 其他"
+        "4. 書數有效範圍"
     ]
 )
 
@@ -148,14 +148,8 @@ if step == "1. 做卷有效資料":
         df_duplicates = merged.loc[merged['_merge'] == 'left_only', df_filtered.columns]
 
         st.success(f"有效資料共 {len(df_valid)} 筆，重複資料共 {len(df_duplicates)} 筆。")
-
-        # 只顯示 A~O 欄（index 0~14），並新增一個空的 P 欄
-        valid_cols = df_valid.columns[:15]  # 取前 15 欄
-        df_show = df_valid.loc[:, valid_cols].copy()
-        df_show["P欄"] = ""  # 新增空的 P 欄
-
-        st.subheader("有效資料（A~O欄＋P欄）")
-        st.dataframe(df_show)
+        st.subheader("有效資料")
+        st.dataframe(df_valid)
         st.subheader("重複資料")
         st.dataframe(df_duplicates)
 
@@ -168,7 +162,7 @@ if step == "1. 做卷有效資料":
 
         st.download_button(
             label="下載有效資料 Excel",
-            data=to_excel(df_show),  # 只下載 A~O+P
+            data=to_excel(df_valid),
             file_name="valid_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
@@ -182,74 +176,70 @@ if step == "1. 做卷有效資料":
         # Save valid_data to session_state for step 2
         st.session_state['valid_data'] = df_valid
 
-elif step == "2. 客戶課堂報表處理":
-    st.header("Step 2: 客戶課堂報表處理")
-    uploaded_file = st.file_uploader("請上傳 客戶課堂報表 (xls/xlsx)", type=["xls", "xlsx"], key="step2_upload")
-    if uploaded_file:
-        try:
-            df = pd.read_excel(uploaded_file, header=0, dtype=str)
-        except Exception as e:
-            st.error(f"讀取檔案時發生錯誤: {e}")
-            st.stop()
+elif step == "2. 出卷老師資料":
+    st.header("出卷老師資料")
+    df_valid = st.session_state.get('valid_data', None)
+    if df_valid is None:
+        st.warning("請先在步驟一上傳並產生有效資料。")
+    else:
+        # 只統計三個 list 的年級_卷
+        juan_types = [j for j in cb_list + kt_list + mc_list if j in df_valid["年級_卷"].unique()]
+        rows = []
+        for juan in juan_types:
+            price = 25 if "1小時" in juan else 32
+            cb_count = df_valid[(df_valid["年級_卷"] == juan) & (df_valid["出卷老師"] == "cb")].shape[0]
+            kt_count = df_valid[(df_valid["年級_卷"] == juan) & (df_valid["出卷老師"] == "kt")].shape[0]
+            mc_count = df_valid[(df_valid["年級_卷"] == juan) & (df_valid["出卷老師"] == "mc")].shape[0]
+            cb_commission = cb_count * price
+            kt_commission = kt_count * price
+            mc_commission = mc_count * price
+            row = {
+                "年級+卷": juan,
+                "單價": price,
+                "cb": cb_count,
+                "cb 佣金": cb_commission,
+                "kt": kt_count,
+                "kt 佣金": kt_commission,
+                "mc": mc_count,
+                "mc 佣金": mc_commission,
+                "總和": cb_count + kt_count + mc_count,
+                "佣金總和": cb_commission + kt_commission + mc_commission
+            }
+            rows.append(row)
+        result = pd.DataFrame(rows)
 
-        # 1. 只保留A~O欄
-        df = df.iloc[:, :15].copy()
-
-        # 2. 新增P欄：老師出席排序
-        teacher_status_col = [col for col in df.columns if "老師出席狀況" in str(col)]
-        if not teacher_status_col:
-            st.error("找不到老師出席狀況欄位，請檢查檔案格式。")
-            st.stop()
-        teacher_status_col = teacher_status_col[0]
-
-        status_map = {
-            "出席": 1,
-            "請假": 2,
-            "跳堂": 3,
-            "病假": 4,
-            "缺席": 5,
-            "代課": 6
+        # 加總列
+        total_row = {
+            "年級+卷": "總和",
+            "單價": "-",
+            "cb": result["cb"].sum(),
+            "cb 佣金": result["cb 佣金"].sum(),
+            "kt": result["kt"].sum(),
+            "kt 佣金": result["kt 佣金"].sum(),
+            "mc": result["mc"].sum(),
+            "mc 佣金": result["mc 佣金"].sum(),
+            "總和": result["總和"].sum(),
+            "佣金總和": result["佣金總和"].sum()
         }
-        df["老師出席排序"] = df[teacher_status_col].map(status_map).fillna(99).astype(int)
+        result = pd.concat([result, pd.DataFrame([total_row])], ignore_index=True)
 
-        # 3. 刪除不需要的紀錄
-        # K欄（index 10） 學生出席狀態[補堂] 以「由」字頭的紀錄
-        k_col = df.columns[10]
-        df = df[~df[k_col].astype(str).str.startswith("由", na=False)]
+        # 儲存總金額到 session_state
+        st.session_state['step2_total'] = total_row["佣金總和"]
 
-        # B欄（index 1） 學生編號 以「TAC」字頭的紀錄
-        b_col = df.columns[1]
-        df = df[~df[b_col].astype(str).str.startswith("TAC", na=False)]
+        # 顯示
+        st.subheader("出卷老師的做卷人數及佣金統計表")
+        st.dataframe(result)
 
-        # O欄（index 14） 課室 包含「LIVE」字樣的紀錄
-        o_col = df.columns[14]
-        df = df[~df[o_col].astype(str).str.contains("LIVE", na=False)]
-
-        # 4. 排序：客戶編號 > 班別 > 老師出席排序
-        cust_col = [col for col in df.columns if "客戶編號" in str(col)]
-        class_col = [col for col in df.columns if "班別" in str(col)]
-        if not cust_col or not class_col:
-            st.error("找不到客戶編號或班別欄位，請檢查檔案格式。")
-            st.stop()
-        cust_col = cust_col[0]
-        class_col = class_col[0]
-        df = df.sort_values(by=[cust_col, class_col, "老師出席排序"])
-
-        # 5. 刪除重覆：客戶編號＋班別
-        df = df.drop_duplicates(subset=[cust_col, class_col], keep="first")
-
-        st.success(f"處理後資料共 {len(df)} 筆。")
-        st.dataframe(df)
-
+        # 下載
         def to_excel(df):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False)
             return output.getvalue()
         st.download_button(
-            label="下載處理後 Excel",
-            data=to_excel(df),
-            file_name="step2_result.xlsx",
+            label="下載出卷老師統計表 Excel",
+            data=to_excel(result),
+            file_name="teacher_assignment_summary.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
@@ -330,6 +320,50 @@ elif step == "3. 分校做卷情況":
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-else:
-    st.header("其他功能")
-    st.info("此步驟尚未實作，請稍候。")
+elif step == "4. 書數有效範圍":
+    st.header("書數有效範圍")
+    df_valid = st.session_state.get('valid_data', None)
+    if df_valid is None:
+        st.warning("請先在步驟一上傳並產生有效資料。")
+    else:
+        # 只顯示A~O欄（前15欄），並新增P欄「老師出席狀態排序」
+        # 先確保有足夠欄位
+        if df_valid.shape[1] < 15:
+            st.error("有效資料欄位不足，請檢查資料。")
+        else:
+            # 取前15欄
+            df_range = df_valid.iloc[:, :15].copy()
+            # 找出老師出席狀態欄（第14欄，index=13，或名稱含"老師出席狀態"）
+            teacher_status_col = None
+            for col in df_range.columns:
+                if "老師出席狀態" in str(col):
+                    teacher_status_col = col
+                    break
+            if teacher_status_col is None:
+                st.error("找不到老師出席狀態欄，請檢查資料。")
+            else:
+                # 定義排序邏輯
+                status_map = {
+                    "出席": "1出席",
+                    "請假": "2請假",
+                    "跳堂": "3跳堂",
+                    "病假": "4病假",
+                    "缺席": "5缺席",
+                    "代課": "6代課"
+                }
+                def get_status_sort(val):
+                    return status_map.get(str(val).strip(), "")
+                df_range["老師出席狀態排序"] = df_range[teacher_status_col].apply(get_status_sort)
+                st.dataframe(df_range)
+                # 下載
+                def to_excel(df):
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False)
+                    return output.getvalue()
+                st.download_button(
+                    label="下載書數有效範圍 Excel",
+                    data=to_excel(df_range),
+                    file_name="book_valid_range.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
