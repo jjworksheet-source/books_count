@@ -41,7 +41,7 @@ if step == "1. 上傳與初始處理 (保留A-O, 新增P欄排序)":
     if uploaded_file:
         try:
             # 讀取 Excel，跳過前 6 行，用第 7 行作為標頭
-            df = pd.read_excel(uploaded_file, skiprows=6, header=0, dtype=str)
+            df = pd.read_excel(uploaded_file, skiprows=6, header=0, dtype=str, engine='xlrd')
             df.columns = [str(col).strip() for col in df.columns]
         except Exception as e:
             st.error(f"讀取檔案時發生錯誤: {e}")
@@ -64,6 +64,7 @@ if step == "1. 上傳與初始處理 (保留A-O, 新增P欄排序)":
         st.success(f"步驟1 完成：保留A-O欄並新增P欄排序，共 {len(df_step1)} 筆資料。")
         st.subheader("步驟1 資料預覽")
         st.dataframe(df_step1.head(10))
+        st.write("Detected columns:", df_step1.columns.tolist())
         st.download_button(
             label="下載步驟1 Excel",
             data=to_excel(df_step1),
@@ -138,7 +139,7 @@ elif step == "3. 刪除重複並產生大數表":
             st.stop()
         
         # 產生大數表：按班別統計總人數
-        name_col = find_col(df_step3.columns, ['學生姓名'])
+        name_col = find_col(df_step3.columns, ['學生姓名', '學栍姓名'])
         if class_col and name_col:
             df_summary = df_step3.groupby(class_col)[name_col].count().reset_index(name='總人數')
             st.session_state.df_step3 = df_summary
