@@ -6,19 +6,73 @@ st.set_page_config(page_title="Jolly Jupiter IT Department", layout="wide")
 
 st.title("中文做卷及書管理")
 
-# Sidebar with step-by-step templates
-st.sidebar.title("操作步驟")
-step = st.sidebar.radio(
-    "請選擇步驟",
-    [
-        "1. 做卷有效資料",
-        "2. 出卷老師資料",
-        "3. 分校做卷情況",
-        "4. 書數有效範圍"
-    ]
-)
+# Sidebar
+with st.sidebar:
+    st.markdown("<h2 style='font-size:2em; color:#2c3e50;'>書數</h2>", unsafe_allow_html=True)
+    book_func = st.radio(
+        "書數功能",
+        ["書數有效範圍"]
+    )
+    st.markdown("---")
+    st.markdown("**其他功能**")
+    main_func = st.radio(
+        "請選擇功能",
+        [
+            "做卷有效資料",
+            "出卷老師資料",
+            "分校做卷情況"
+        ]
+    )
 
-# cb/kt/mc list
+# 書數有效範圍功能（獨立上傳）
+if book_func == "書數有效範圍":
+    st.header("書數有效範圍")
+    uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
+    if uploaded_book_file:
+        try:
+            df_book = pd.read_excel(uploaded_book_file, dtype=str)
+        except Exception as e:
+            st.error(f"讀取檔案時發生錯誤: {e}")
+            st.stop()
+        # 只顯示A~O欄（前15欄），並新增P欄「老師出席狀態排序」
+        if df_book.shape[1] < 15:
+            st.error("有效資料欄位不足，請檢查資料。")
+        else:
+            df_range = df_book.iloc[:, :15].copy()
+            # 找出老師出席狀態欄（第14欄，index=13，或名稱含"老師出席狀態"）
+            teacher_status_col = None
+            for col in df_range.columns:
+                if "老師出席狀態" in str(col):
+                    teacher_status_col = col
+                    break
+            if teacher_status_col is None:
+                st.error("找不到老師出席狀態欄，請檢查資料。")
+            else:
+                status_map = {
+                    "出席": "1出席",
+                    "請假": "2請假",
+                    "跳堂": "3跳堂",
+                    "病假": "4病假",
+                    "缺席": "5缺席",
+                    "代課": "6代課"
+                }
+                def get_status_sort(val):
+                    return status_map.get(str(val).strip(), "")
+                df_range["老師出席狀態排序"] = df_range[teacher_status_col].apply(get_status_sort)
+                st.dataframe(df_range)
+                def to_excel(df):
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False)
+                    return output.getvalue()
+                st.download_button(
+                    label="下載書數有效範圍 Excel",
+                    data=to_excel(df_range),
+                    file_name="book_valid_range.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+# 其餘功能（沿用原本 step1~3，僅在 main_func 被選中時顯示）
 cb_list = [
     "P1女拔_", "P1男拔_", "P1男拔_1小時", "P5女拔_", "P5男拔_", "P5男拔_1小時", "P6女拔_", "P6男拔_", "P6男拔_1小時"
 ]
@@ -30,22 +84,18 @@ mc_list = [
 ]
 all_juan_list = cb_list + kt_list + mc_list
 
-# 用於全局暫存有效資料
 if 'valid_data' not in st.session_state:
     st.session_state['valid_data'] = None
 
-if step == "1. 做卷有效資料":
+if main_func == "做卷有效資料":
     st.header("上傳報表 (JJCustomer Report)")
-    uploaded_file = st.file_uploader("請上傳 JJCustomer 報表 (xls/xlsx)", type=["xls", "xlsx"])
+    uploaded_file = st.file_uploader("請上傳 JJCustomer 報表 (xls/xlsx)", type=["xls", "xlsx"], key="main_file")
     if uploaded_file:
         try:
-            # Read with header at row 6 (index 5)
             df = pd.read_excel(uploaded_file, header=5, dtype=str)
         except Exception as e:
             st.error(f"讀取檔案時發生錯誤: {e}")
             st.stop()
-
-        # Filter by 班別
         class_types = [
             "etup 測考卷 - 高小",
             "etlp 測考卷 - 初小",
@@ -57,38 +107,27 @@ if step == "1. 做卷有效資料":
             st.error("找不到班別欄位，請檢查檔案格式。")
             st.stop()
         class_col = class_col[0]
-
         df_filtered = df[df[class_col].astype(str).str.contains('|'.join(class_types), na=False)]
-
-        # Filter by 學生出席狀況
         att_col = [col for col in df.columns if "學生出席狀況" in str(col)]
         if not att_col:
             st.error("找不到學生出席狀況欄位，請檢查檔案格式。")
             st.stop()
         att_col = att_col[0]
         df_filtered = df_filtered[df_filtered[att_col] == "出席"]
-
-        # Find relevant columns for duplicate checking
         id_col = [col for col in df.columns if "學生編號" in str(col)][0]
         name_col = [col for col in df.columns if "學栍姓名" in str(col) or "學生姓名" in str(col)][0]
         date_col = [col for col in df.columns if "上課日期" in str(col)][0]
         time_col = [col for col in df.columns if "時間" in str(col)][0]
-
-        # Special duplicate logic: group and keep non-請假 if present
         teacher_status_col = [col for col in df.columns if "老師出席狀況" in str(col)]
         teacher_status_col = teacher_status_col[0] if teacher_status_col else None
-
         group_cols = [id_col, name_col, date_col, class_col, time_col]
         if teacher_status_col:
             def pick_row(group):
-                # If any row is not 請假, keep the first such row; else keep the first row
                 not_leave = group[group[teacher_status_col] != "請假"]
                 return not_leave.iloc[0] if not_leave.shape[0] > 0 else group.iloc[0]
             df_valid = df_filtered.groupby(group_cols, as_index=False).apply(pick_row).reset_index(drop=True)
         else:
             df_valid = df_filtered.drop_duplicates(subset=group_cols, keep='first')
-
-        # 新增「年級_卷」欄位
         grade_col = [col for col in df_valid.columns if "年級" in str(col)]
         school_col = [col for col in df_valid.columns if "學校" in str(col)]
         if not grade_col or not school_col:
@@ -96,15 +135,12 @@ if step == "1. 做卷有效資料":
             st.stop()
         grade_col = grade_col[0]
         school_col = school_col[0]
-
         def extract_school_short(s):
-            # 去掉第一個底線，取第一個中文字（如 _喇沙_喇沙小學 -> 喇沙）
             if pd.isna(s):
                 return ""
             s = str(s)
             if s.startswith("_"):
                 s = s[1:]
-            # 取第一個中文字（遇到底線或非中文字就停）
             result = ""
             for ch in s:
                 if '\u4e00' <= ch <= '\u9fff':
@@ -112,20 +148,15 @@ if step == "1. 做卷有效資料":
                 elif ch == "_":
                     break
             return result
-
         def make_grade_juan(row):
             grade = str(row[grade_col]).strip() if not pd.isna(row[grade_col]) else ""
             school = extract_school_short(row[school_col])
             juan = f"{grade}{school}_"
-            # 檢查班別是否有1小時
             class_val = str(row[class_col]) if not pd.isna(row[class_col]) else ""
             if "1小時" in class_val:
                 juan += "1小時"
             return juan
-
         df_valid["年級_卷"] = df_valid.apply(make_grade_juan, axis=1)
-
-        # 新增「出卷老師」欄位
         def get_teacher(juan):
             if juan in cb_list:
                 return "cb"
@@ -135,31 +166,22 @@ if step == "1. 做卷有效資料":
                 return "mc"
             else:
                 return ""
-
         df_valid["出卷老師"] = df_valid["年級_卷"].apply(get_teacher)
-
-        # 將「年級_卷」和「出卷老師」移到最後
         columns = [col for col in df_valid.columns if col not in ["年級_卷", "出卷老師"]]
         columns += ["年級_卷", "出卷老師"]
         df_valid = df_valid[columns]
-
-        # Find duplicates (rows that would have been dropped)
         merged = df_filtered.merge(df_valid[group_cols], on=group_cols, how='left', indicator=True)
         df_duplicates = merged.loc[merged['_merge'] == 'left_only', df_filtered.columns]
-
         st.success(f"有效資料共 {len(df_valid)} 筆，重複資料共 {len(df_duplicates)} 筆。")
         st.subheader("有效資料")
         st.dataframe(df_valid)
         st.subheader("重複資料")
         st.dataframe(df_duplicates)
-
-        # Download buttons
         def to_excel(df):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False)
             return output.getvalue()
-
         st.download_button(
             label="下載有效資料 Excel",
             data=to_excel(df_valid),
@@ -172,17 +194,14 @@ if step == "1. 做卷有效資料":
             file_name="duplicate_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
-        # Save valid_data to session_state for step 2
         st.session_state['valid_data'] = df_valid
 
-elif step == "2. 出卷老師資料":
+if main_func == "出卷老師資料":
     st.header("出卷老師資料")
     df_valid = st.session_state.get('valid_data', None)
     if df_valid is None:
-        st.warning("請先在步驟一上傳並產生有效資料。")
+        st.warning("請先在做卷有效資料功能上傳並產生有效資料。")
     else:
-        # 只統計三個 list 的年級_卷
         juan_types = [j for j in cb_list + kt_list + mc_list if j in df_valid["年級_卷"].unique()]
         rows = []
         for juan in juan_types:
@@ -207,8 +226,6 @@ elif step == "2. 出卷老師資料":
             }
             rows.append(row)
         result = pd.DataFrame(rows)
-
-        # 加總列
         total_row = {
             "年級+卷": "總和",
             "單價": "-",
@@ -222,15 +239,9 @@ elif step == "2. 出卷老師資料":
             "佣金總和": result["佣金總和"].sum()
         }
         result = pd.concat([result, pd.DataFrame([total_row])], ignore_index=True)
-
-        # 儲存總金額到 session_state
         st.session_state['step2_total'] = total_row["佣金總和"]
-
-        # 顯示
         st.subheader("出卷老師的做卷人數及佣金統計表")
         st.dataframe(result)
-
-        # 下載
         def to_excel(df):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -243,21 +254,18 @@ elif step == "2. 出卷老師資料":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-elif step == "3. 分校做卷情況":
+if main_func == "分校做卷情況":
     st.header("分校做卷情況")
     df_valid = st.session_state.get('valid_data', None)
     if df_valid is None:
-        st.warning("請先在步驟一上傳並產生有效資料。")
+        st.warning("請先在做卷有效資料功能上傳並產生有效資料。")
     else:
-        # 分校清單
         branch_list = ["IRM", "KLN", "NFC", "NPC", "PEC", "SMC", "TKO", "WCC", "WNC"]
-        # 檢查分校欄位
         branch_col = [col for col in df_valid.columns if "分校" in str(col)]
         if not branch_col:
             st.error("找不到分校欄位，請檢查檔案格式。")
         else:
             branch_col = branch_col[0]
-            # 只統計三個 list 的年級_卷
             juan_types = [j for j in cb_list + kt_list + mc_list if j in df_valid["年級_卷"].unique()]
             rows = []
             for juan in juan_types:
@@ -273,8 +281,6 @@ elif step == "3. 分校做卷情況":
                 row["總和_P"] = total_students * price
                 rows.append(row)
             result = pd.DataFrame(rows)
-
-            # 加總列
             total_row = {"年級+卷": "總和", "單價": "-"}
             for branch in branch_list:
                 total_row[f"{branch}_S"] = result[f"{branch}_S"].sum()
@@ -282,23 +288,15 @@ elif step == "3. 分校做卷情況":
             total_row["總和"] = result["總和"].sum()
             total_row["總和_P"] = result["總和_P"].sum()
             result = pd.concat([result, pd.DataFrame([total_row])], ignore_index=True)
-
-            # 指定欄位順序
             columns = ["年級+卷", "單價"]
             for branch in branch_list:
                 columns += [f"{branch}_S", f"{branch}_P"]
             columns += ["總和", "總和_P"]
             result = result[columns]
-
-            # 取得 step2 總金額
             step2_total = st.session_state.get('step2_total', None)
             step3_total = total_row["總和_P"]
-
-            # 顯示
             st.subheader("分校做卷情況統計表")
             st.dataframe(result)
-
-            # 自動比對總金額
             if step2_total is not None:
                 if step2_total == step3_total:
                     st.success(f"總金額一致：{step2_total} 元")
@@ -306,8 +304,6 @@ elif step == "3. 分校做卷情況":
                     st.error(f"總金額不一致！Step 2：{step2_total} 元，Step 3：{step3_total} 元，請檢查資料！")
             else:
                 st.info("尚未產生 Step 2 總金額，請先執行 Step 2。")
-
-            # 下載
             def to_excel(df):
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -319,51 +315,3 @@ elif step == "3. 分校做卷情況":
                 file_name="branch_assignment_summary.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
-elif step == "4. 書數有效範圍":
-    st.header("書數有效範圍")
-    df_valid = st.session_state.get('valid_data', None)
-    if df_valid is None:
-        st.warning("請先在步驟一上傳並產生有效資料。")
-    else:
-        # 只顯示A~O欄（前15欄），並新增P欄「老師出席狀態排序」
-        # 先確保有足夠欄位
-        if df_valid.shape[1] < 15:
-            st.error("有效資料欄位不足，請檢查資料。")
-        else:
-            # 取前15欄
-            df_range = df_valid.iloc[:, :15].copy()
-            # 找出老師出席狀態欄（第14欄，index=13，或名稱含"老師出席狀態"）
-            teacher_status_col = None
-            for col in df_range.columns:
-                if "老師出席狀態" in str(col):
-                    teacher_status_col = col
-                    break
-            if teacher_status_col is None:
-                st.error("找不到老師出席狀態欄，請檢查資料。")
-            else:
-                # 定義排序邏輯
-                status_map = {
-                    "出席": "1出席",
-                    "請假": "2請假",
-                    "跳堂": "3跳堂",
-                    "病假": "4病假",
-                    "缺席": "5缺席",
-                    "代課": "6代課"
-                }
-                def get_status_sort(val):
-                    return status_map.get(str(val).strip(), "")
-                df_range["老師出席狀態排序"] = df_range[teacher_status_col].apply(get_status_sort)
-                st.dataframe(df_range)
-                # 下載
-                def to_excel(df):
-                    output = BytesIO()
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df.to_excel(writer, index=False)
-                    return output.getvalue()
-                st.download_button(
-                    label="下載書數有效範圍 Excel",
-                    data=to_excel(df_range),
-                    file_name="book_valid_range.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
