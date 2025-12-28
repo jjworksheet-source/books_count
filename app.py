@@ -67,17 +67,18 @@ if uploaded_file:
         df = df[~df[classroom_col].astype(str).str.contains('LIVE', na=False)]
 
     # 5. 排序
-    customerid_col = [col for col in df.columns if "客戶編號" in str(col)]
+    # 將「客戶編號」改為「學生編號」
+    studentid_col = [col for col in df.columns if "學生編號" in str(col)]
     class_col = [col for col in df.columns if "班別" in str(col)]
-    if not customerid_col or not class_col:
-        st.error("找不到「客戶編號」或「班別」欄位，請檢查檔案格式。")
+    if not studentid_col or not class_col:
+        st.error("找不到「學生編號」或「班別」欄位，請檢查檔案格式。")
         st.stop()
-    customerid_col = customerid_col[0]
+    studentid_col = studentid_col[0]
     class_col = class_col[0]
-    df = df.sort_values(by=[customerid_col, class_col, "老師出席排序"])
+    df = df.sort_values(by=[studentid_col, class_col, "老師出席排序"])
 
-    # 6. 刪除重複（以「客戶編號」＋「班別」為 key，只保留第一筆）
-    df = df.drop_duplicates(subset=[customerid_col, class_col], keep='first')
+    # 6. 刪除重複（以「學生編號」＋「班別」為 key，只保留第一筆）
+    df = df.drop_duplicates(subset=[studentid_col, class_col], keep='first')
 
     # 顯示結果
     st.success(f"清理後剩餘 {len(df)} 筆資料。")
