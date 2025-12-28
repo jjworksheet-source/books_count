@@ -41,7 +41,6 @@ if step == "1. 做卷有效資料":
         try:
             # Read with header at row 6 (index 5)
             df = pd.read_excel(uploaded_file, header=5, dtype=str)
-            df = df.iloc[:, :15]  # Only keep columns A to O
         except Exception as e:
             st.error(f"讀取檔案時發生錯誤: {e}")
             st.stop()
@@ -310,3 +309,17 @@ elif step == "3. 分校做卷情況":
 
             # 下載
             def to_excel(df):
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False)
+                return output.getvalue()
+            st.download_button(
+                label="下載分校做卷情況統計表 Excel",
+                data=to_excel(result),
+                file_name="branch_assignment_summary.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+else:
+    st.header("其他功能")
+    st.info("此步驟尚未實作，請稍候。")
