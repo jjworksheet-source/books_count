@@ -8,7 +8,7 @@ st.markdown("""
 /* 覆蓋 Streamlit 的 CSS 變數（root 層級） */
 :root {
     --text-color: #333333;  /* 全局文字顏色：深灰 */
-    --background-color: #FFFFFF;  /* 主頁背景（預設白，可改） */
+    --background-color: #F5FFFA;  /* 主頁背景（預設白，可改） */
     --secondary-background-color: #F0F8FF;  /* 側邊欄背景：淺藍 (AliceBlue) */
     --primary-color: #DA70D6;  /* 主要強調色：熱粉紅 (HotPink)，用於按鈕等 */
 }
