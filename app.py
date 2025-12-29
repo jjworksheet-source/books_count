@@ -21,7 +21,7 @@ if main_page == "書數預算":
 
     # 書數有效範圍：上傳並暫存 處理後的 DataFrame
     if book_page == "書數有效範圍":
-        st.markdown('<h2 style="color:#00008B;">書數有效範圍</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#00008B;">書數有效範圍</h2>', unsafe_allow_html=True)
         uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
         if uploaded_book_file:
             try:
