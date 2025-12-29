@@ -31,7 +31,7 @@ div.stButton > button {
 
 /* 按鈕 hover 效果 */
 div.stButton > button:hover {
-    background-color: #FF1493 !important;  /* 深粉紅 (DeepPink) */
+    background-color: #DA70D6 !important;  /* 深粉紅 (DeepPink) */
 }
 
 /* 成功訊息顏色（僅針對 st.success） */
