@@ -5,40 +5,39 @@ from io import BytesIO
 
 st.markdown("""
 <style>
-/* 主要標題顏色（例如 st.title） */
+/* 覆蓋 Streamlit 的 CSS 變數（root 層級） */
+:root {
+    --text-color: #333333;  /* 全局文字顏色：深灰 */
+    --background-color: #FFFFFF;  /* 主頁背景（預設白，可改） */
+    --secondary-background-color: #F0F8FF;  /* 側邊欄背景：淺藍 (AliceBlue) */
+    --primary-color: #FF69B4;  /* 主要強調色：熱粉紅 (HotPink)，用於按鈕等 */
+}
+
+/* 主要標題顏色（st.title 用 <h1>） */
 h1 {
-    color: #00008B;  /* 深藍色 */
+    color: #00008B !important;  /* 深藍色 */
 }
 
-/* 次要標題顏色（例如 st.header） */
+/* 次要標題顏色（st.header 用 <h2>） */
 h2 {
-    color: #4B0082;  /* 靛藍色 */
+    color: #4B0082 !important;  /* 靛藍色 */
 }
 
-/* 側邊欄背景顏色 */
-section[data-testid="stSidebar"] {
-    background-color: #F0F8FF;  /* 淺藍色（AliceBlue） */
-}
-
-/* 按鈕顏色（例如下載按鈕） */
+/* 按鈕顏色（下載按鈕等） */
 div.stButton > button {
-    background-color: #FF69B4;  /* 熱粉紅色（HotPink，糖果色） */
-    color: white;  /* 白色文字 */
+    background-color: var(--primary-color) !important;  /* 使用變數：熱粉紅 */
+    color: white !important;  /* 白色文字 */
 }
 
 /* 按鈕 hover 效果 */
 div.stButton > button:hover {
-    background-color: #FF1493;  /* 深粉紅色（DeepPink） */
+    background-color: #FF1493 !important;  /* 深粉紅 (DeepPink) */
 }
 
-/* 文字顏色（全局） */
-body {
-    color: #333333;  /* 深灰色 */
-}
-
-/* 成功訊息顏色（例如 st.success） */
-div.stAlert[data-testid="stAlert"] {
-    background-color: #90EE90;  /* 淺綠色（LightGreen） */
+/* 成功訊息顏色（僅針對 st.success） */
+div.row-widget.stAlert:has(> div > div > div > p) {  /* 更精確選擇器，避免影響其他警報 */
+    background-color: #90EE90 !important;  /* 淺綠 (LightGreen) */
+    color: #006400 !important;  /* 深綠文字，增加可讀性 */
 }
 </style>
 """, unsafe_allow_html=True)
