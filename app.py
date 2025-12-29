@@ -63,9 +63,50 @@ if main_page == "書數預算":
                         file_name="book_valid_range.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
-    elif book_page == "others":
-        st.header("書數預算 - 其他功能")
-        st.info("請在此處補充其他書數預算相關功能。")
+    book_page = st.sidebar.radio(
+        "書數預算功能",
+        ["書數有效範圍", "刪除步驟"]
+    )
+
+    if book_page == "書數有效範圍":
+        # ...（原本的書數有效範圍程式碼不變）
+        # 省略
+
+    elif book_page == "刪除步驟":
+        st.header("書數預算 - 刪除步驟")
+        uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="delete_file")
+        if uploaded_book_file:
+            try:
+                df_book = pd.read_excel(uploaded_book_file, header=5, dtype=str)
+            except Exception as e:
+                st.error(f"讀取檔案時發生錯誤: {e}")
+                st.stop()
+            original_count = len(df_book)
+            # 1. 刪除欄位K（補堂）以「由」開頭的紀錄
+            col_k = [col for col in df_book.columns if col.strip() == "補堂"]
+            if col_k:
+                df_book = df_book[~df_book[col_k[0]].astype(str).str.startswith("由", na=False)]
+            # 2. 刪除欄位B（學生編號）以「TAC」開頭的紀錄
+            col_b = [col for col in df_book.columns if col.strip() == "學生編號"]
+            if col_b:
+                df_book = df_book[~df_book[col_b[0]].astype(str).str.startswith("TAC", na=False)]
+            # 3. 刪除欄位「課室」包含「LIVE」字樣的紀錄
+            col_room = [col for col in df_book.columns if "課室" in col]
+            if col_room:
+                df_book = df_book[~df_book[col_room[0]].astype(str).str.contains("LIVE", na=False)]
+            st.success(f"已完成刪除，剩餘 {len(df_book)} 筆（原始 {original_count} 筆）")
+            st.dataframe(df_book)
+            def to_excel(df):
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False)
+                return output.getvalue()
+            st.download_button(
+                label="下載已刪除資料 Excel",
+                data=to_excel(df_book),
+                file_name="deleted_rows_result.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 # 做卷資料子選單
 elif main_page == "做卷資料":
