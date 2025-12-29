@@ -19,14 +19,13 @@ if main_page == "書數預算":
         ["書數有效範圍", "刪除步驟"]
     )
 
-    # 書數有效範圍：上傳並暫存 DataFrame
+    # 書數有效範圍：上傳並暫存 處理後的 DataFrame
     if book_page == "書數有效範圍":
         st.header("書數有效範圍")
         uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
         if uploaded_book_file:
             try:
                 df_book = pd.read_excel(uploaded_book_file, header=5, dtype=str)
-                st.session_state['book_df'] = df_book  # 暫存
             except Exception as e:
                 st.error(f"讀取檔案時發生錯誤: {e}")
                 st.stop()
@@ -53,6 +52,7 @@ if main_page == "書數預算":
                     def get_status_sort(val):
                         return status_map.get(str(val).strip(), "")
                     df_range["老師出席狀況排序"] = df_range[teacher_status_col].apply(get_status_sort)
+                    st.session_state['book_range_df'] = df_range  # 暫存處理後的結果
                     st.dataframe(df_range)
                     def to_excel(df):
                         output = BytesIO()
@@ -66,28 +66,28 @@ if main_page == "書數預算":
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
 
-    # 刪除步驟：直接用 session_state['book_df']
+    # 刪除步驟：直接用 session_state['book_range_df']
     elif book_page == "刪除步驟":
         st.header("書數預算 - 刪除步驟")
-        if 'book_df' not in st.session_state:
-            st.warning("請先在『書數有效範圍』上傳檔案。")
+        if 'book_range_df' not in st.session_state:
+            st.warning("請先在『書數有效範圍』上傳並產生有效範圍結果。")
         else:
-            df_book = st.session_state['book_df'].copy()
-            original_count = len(df_book)
+            df_range = st.session_state['book_range_df'].copy()
+            original_count = len(df_range)
             # 1. 刪除欄位K（補堂）以「由」開頭的紀錄
-            col_k = [col for col in df_book.columns if col.strip() == "補堂"]
+            col_k = [col for col in df_range.columns if col.strip() == "補堂"]
             if col_k:
-                df_book = df_book[~df_book[col_k[0]].astype(str).str.startswith("由", na=False)]
+                df_range = df_range[~df_range[col_k[0]].astype(str).str.startswith("由", na=False)]
             # 2. 刪除欄位B（學生編號）以「TAC」開頭的紀錄
-            col_b = [col for col in df_book.columns if col.strip() == "學生編號"]
+            col_b = [col for col in df_range.columns if col.strip() == "學生編號"]
             if col_b:
-                df_book = df_book[~df_book[col_b[0]].astype(str).str.startswith("TAC", na=False)]
+                df_range = df_range[~df_range[col_b[0]].astype(str).str.startswith("TAC", na=False)]
             # 3. 刪除欄位「課室」包含「LIVE」字樣的紀錄
-            col_room = [col for col in df_book.columns if "課室" in col]
+            col_room = [col for col in df_range.columns if "課室" in col]
             if col_room:
-                df_book = df_book[~df_book[col_room[0]].astype(str).str.contains("LIVE", na=False)]
-            st.success(f"已完成刪除，剩餘 {len(df_book)} 筆（原始 {original_count} 筆）")
-            st.dataframe(df_book)
+                df_range = df_range[~df_range[col_room[0]].astype(str).str.contains("LIVE", na=False)]
+            st.success(f"已完成刪除，剩餘 {len(df_range)} 筆（原始 {original_count} 筆）")
+            st.dataframe(df_range)
             def to_excel(df):
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -95,12 +95,12 @@ if main_page == "書數預算":
                 return output.getvalue()
             st.download_button(
                 label="下載已刪除資料 Excel",
-                data=to_excel(df_book),
+                data=to_excel(df_range),
                 file_name="deleted_rows_result.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-# 做卷資料子選單
+# 做卷資料子選單（原本的功能不變，以下略）
 elif main_page == "做卷資料":
     st.sidebar.markdown("---")
     juan_page = st.sidebar.radio(
