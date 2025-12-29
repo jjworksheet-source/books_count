@@ -19,12 +19,14 @@ if main_page == "書數預算":
         ["書數有效範圍", "刪除步驟"]
     )
 
+    # 書數有效範圍：上傳並暫存 DataFrame
     if book_page == "書數有效範圍":
         st.header("書數有效範圍")
         uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
         if uploaded_book_file:
             try:
                 df_book = pd.read_excel(uploaded_book_file, header=5, dtype=str)
+                st.session_state['book_df'] = df_book  # 暫存
             except Exception as e:
                 st.error(f"讀取檔案時發生錯誤: {e}")
                 st.stop()
@@ -64,15 +66,13 @@ if main_page == "書數預算":
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
 
+    # 刪除步驟：直接用 session_state['book_df']
     elif book_page == "刪除步驟":
         st.header("書數預算 - 刪除步驟")
-        uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="delete_file")
-        if uploaded_book_file:
-            try:
-                df_book = pd.read_excel(uploaded_book_file, header=5, dtype=str)
-            except Exception as e:
-                st.error(f"讀取檔案時發生錯誤: {e}")
-                st.stop()
+        if 'book_df' not in st.session_state:
+            st.warning("請先在『書數有效範圍』上傳檔案。")
+        else:
+            df_book = st.session_state['book_df'].copy()
             original_count = len(df_book)
             # 1. 刪除欄位K（補堂）以「由」開頭的紀錄
             col_k = [col for col in df_book.columns if col.strip() == "補堂"]
