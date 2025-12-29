@@ -24,7 +24,7 @@ if main_page == "書數預算":
         uploaded_book_file = st.file_uploader("請上傳書數 Excel 檔案 (xls/xlsx)", type=["xls", "xlsx"], key="book_file")
         if uploaded_book_file:
             try:
-                df_book = pd.read_excel(uploaded_book_file, header=6, dtype=str)
+                df_book = pd.read_excel(uploaded_book_file, header=5, dtype=str)
             except Exception as e:
                 st.error(f"讀取檔案時發生錯誤: {e}")
                 st.stop()
@@ -34,11 +34,11 @@ if main_page == "書數預算":
                 df_range = df_book.iloc[:, :15].copy()
                 teacher_status_col = None
                 for col in df_range.columns:
-                    if "老師出席狀態" in str(col):
+                    if "老師出席狀況" in str(col):
                         teacher_status_col = col
                         break
                 if teacher_status_col is None:
-                    st.error("找不到老師出席狀態欄，請檢查資料。")
+                    st.error("找不到老師出席狀況欄，請檢查資料。")
                 else:
                     status_map = {
                         "出席": "1出席",
@@ -50,7 +50,7 @@ if main_page == "書數預算":
                     }
                     def get_status_sort(val):
                         return status_map.get(str(val).strip(), "")
-                    df_range["老師出席狀態排序"] = df_range[teacher_status_col].apply(get_status_sort)
+                    df_range["老師出席狀況排序"] = df_range[teacher_status_col].apply(get_status_sort)
                     st.dataframe(df_range)
                     def to_excel(df):
                         output = BytesIO()
