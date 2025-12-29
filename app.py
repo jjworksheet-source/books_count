@@ -1,7 +1,49 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+# ... 您的匯入語句 ...
 
+st.markdown("""
+<style>
+/* 主要標題顏色（例如 st.title） */
+h1 {
+    color: #00008B;  /* 深藍色 */
+}
+
+/* 次要標題顏色（例如 st.header） */
+h2 {
+    color: #4B0082;  /* 靛藍色 */
+}
+
+/* 側邊欄背景顏色 */
+section[data-testid="stSidebar"] {
+    background-color: #F0F8FF;  /* 淺藍色（AliceBlue） */
+}
+
+/* 按鈕顏色（例如下載按鈕） */
+div.stButton > button {
+    background-color: #FF69B4;  /* 熱粉紅色（HotPink，糖果色） */
+    color: white;  /* 白色文字 */
+}
+
+/* 按鈕 hover 效果 */
+div.stButton > button:hover {
+    background-color: #FF1493;  /* 深粉紅色（DeepPink） */
+}
+
+/* 文字顏色（全局） */
+body {
+    color: #333333;  /* 深灰色 */
+}
+
+/* 成功訊息顏色（例如 st.success） */
+div.stAlert[data-testid="stAlert"] {
+    background-color: #90EE90;  /* 淺綠色（LightGreen） */
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ... 您的其餘程式碼，例如 st.set_page_config() ...
 st.set_page_config(page_title=" Jolly Jupiter 報表分析系統", layout="wide")
 st.markdown('<h1 style="color:#00008B;">Jolly Jupiter 報表分析系統</h1>', unsafe_allow_html=True)  # Deep blue (DarkBlue hex code)
 
