@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title=" Jolly Jupiter 報表分析系統", layout="wide")
-st.title("Jolly Jupiter 報表分析系統")
+st.markdown('<h1 style="color:#00008B;">Jolly Jupiter 報表分析系統</h1>', unsafe_allow_html=True)  # Deep blue (DarkBlue hex code)
 
 # 第一層選單
 main_page = st.sidebar.radio(
