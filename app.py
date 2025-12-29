@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.set_page_config(page_title="報表分析系統", layout="wide")
-st.title("報表分析系統")
+st.set_page_config(page_title=" Jolly Jupiter 報表分析系統", layout="wide")
+st.title("Jolly Jupiter 報表分析系統")
 
 # 第一層選單
 main_page = st.sidebar.radio(
