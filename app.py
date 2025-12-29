@@ -16,7 +16,7 @@ if main_page == "書數預算":
     st.sidebar.markdown("---")
     book_page = st.sidebar.radio(
         "書數預算功能",
-        ["書數有效範圍", "others"]
+        ["書數有效範圍", "刪除步驟"]
     )
 
     if book_page == "書數有效範圍":
@@ -63,14 +63,6 @@ if main_page == "書數預算":
                         file_name="book_valid_range.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
-    book_page = st.sidebar.radio(
-        "書數預算功能",
-        ["書數有效範圍", "刪除步驟"]
-    )
-
-    if book_page == "書數有效範圍":
-        # ...（原本的書數有效範圍程式碼不變）
-        # 省略
 
     elif book_page == "刪除步驟":
         st.header("書數預算 - 刪除步驟")
