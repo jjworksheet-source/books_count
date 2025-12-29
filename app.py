@@ -10,7 +10,7 @@ st.markdown("""
     --text-color: #333333;  /* 全局文字顏色：深灰 */
     --background-color: #FFFFFF;  /* 主頁背景（預設白，可改） */
     --secondary-background-color: #F0F8FF;  /* 側邊欄背景：淺藍 (AliceBlue) */
-    --primary-color: #FF69B4;  /* 主要強調色：熱粉紅 (HotPink)，用於按鈕等 */
+    --primary-color: #DA70D6;  /* 主要強調色：熱粉紅 (HotPink)，用於按鈕等 */
 }
 
 /* 主要標題顏色（st.title 用 <h1>） */
@@ -20,7 +20,7 @@ h1 {
 
 /* 次要標題顏色（st.header 用 <h2>） */
 h2 {
-    color: #4B0082 !important;  /* 靛藍色 */
+    color: #DA70D6 !important;  /* 靛藍色 */
 }
 
 /* 按鈕顏色（下載按鈕等） */
